@@ -1,0 +1,31 @@
+watches:
+  - name: "Nike Air Force 1"
+    vinted_domain: "vinted.fr"
+    query: "nike air force 1"
+    max_price: 50.0
+    currency: "EUR"
+    polling_interval_sec: 30
+    filters:
+      order: "newest_first"
+      price_from: 10
+      # Optional filters:
+      # category_ids: [1234]
+      # brand_ids: [5678]
+      # size_ids: [42]
+      # condition_ids: [1, 2, 3]  # 1=New, 2=Very good, 3=Good, etc.
+    min_seller_feedback_count: 5
+    min_seller_rating: 4.0
+    notification_webhook: null  # Use global webhook
+
+  - name: "Vintage Denim Jacket"
+    vinted_domain: "vinted.com"
+    query: "vintage denim jacket"
+    max_price: 30.0
+    currency: "USD"
+    polling_interval_sec: 45
+    filters:
+      order: "price_low_to_high"
+      price_from: 15
+    min_seller_feedback_count: 10
+    min_seller_rating: 4.5
+    # notification_webhook: "https://discord.com/api/webhooks/DIFFERENT_WEBHOOK"

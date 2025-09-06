@@ -1,0 +1,65 @@
+watches:
+- currency: EUR
+  filters:
+    order: newest_first
+    price_from: 50.0
+  max_price: 70.0
+  min_seller_feedback_count: null
+  min_seller_rating: null
+  name: ETB aventures ensemble
+  notification_webhook: null
+  polling_interval_sec: 10
+  query: '"ETB aventures ensemble" -peluche -figurine'
+  vinted_domain: vinted.fr
+
+- currency: EUR
+  filters:
+    order: price_low_to_high
+    price_from: 5.0
+  max_price: 9.0
+  min_seller_feedback_count: null
+  min_seller_rating: null
+  name: blister rivalités destinées
+  notification_webhook: null
+  polling_interval_sec: 10
+  query: '"blister rivalités destinées" -peluche -figurine'
+  vinted_domain: vinted.fr
+
+- currency: EUR
+  filters:
+    order: newest_first
+    price_from: 50.0
+  max_price: 75.0
+  min_seller_feedback_count: null
+  min_seller_rating: null
+  name: "ETB rivalités destinées"
+  notification_webhook: null
+  polling_interval_sec: 10
+  query: '"ETB rivalité destinée" -peluche -figurine'
+  vinted_domain: vinted.fr
+
+- currency: EUR
+  filters:
+    order: newest_first
+    price_from: 14.0
+  max_price: 26.0
+  min_seller_feedback_count: null
+  min_seller_rating: null
+  name: tripack rivalité destinée
+  notification_webhook: null
+  polling_interval_sec: 10
+  query: '"tripack rivalité destinée" -peluche -figurine'
+  vinted_domain: vinted.fr
+
+- currency: EUR
+  filters:
+    order: newest_first
+    price_from: 50.0
+  max_price: 75.0
+  min_seller_feedback_count: null
+  min_seller_rating: null
+  name: ETB étincelles déferlantes
+  notification_webhook: null
+  polling_interval_sec: 10
+  query: '"ETB étincelles déferlantes" -peluche -figurine'
+  vinted_domain: vinted.fr

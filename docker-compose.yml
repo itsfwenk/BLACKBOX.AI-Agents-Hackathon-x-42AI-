@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  vinted-monitor:
+    build: .
+    container_name: vinted-monitor
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/app/data/vinted_monitor.db
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=text
+      - HEADLESS=true
+    
+    # Mount volumes for persistent data (using bind mounts - simpler)
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    
+    # Resource limits (docker-compose compatible)
+    mem_limit: 2g
+    cpus: 1.0
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sqlite3; sqlite3.connect('/app/data/vinted_monitor.db').close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
