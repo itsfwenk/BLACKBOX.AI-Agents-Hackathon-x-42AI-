@@ -1,5 +1,5 @@
 """
-Async scheduler for managing watch polling and notifications.
+Optimized async scheduler with AI analysis and market tracking.
 """
 
 import asyncio
@@ -15,19 +15,22 @@ from .notifier import DiscordNotifier
 from .currency import CurrencyConverter, get_currency_converter
 from .config import GlobalConfig
 from .utils import logger, ExponentialBackoff
+from .ai_analyzer import AIAnalyzer, SmartFilter, create_ai_analyzer
+from .sheets_integration import SheetsManager, MarketAnalyzer, create_sheets_manager
 
 
 class WatchScheduler:
-    """Scheduler for managing watch polling tasks."""
+    """Optimized scheduler with AI analysis and market tracking."""
     
     def __init__(self, 
                  global_config: GlobalConfig,
                  browser_manager: BrowserManager,
                  scraper: VintedScraper,
                  notifier: DiscordNotifier,
-                 currency_converter: Optional[CurrencyConverter] = None):
+                 currency_converter: Optional[CurrencyConverter] = None,
+                 ai_provider: str = "openai"):
         """
-        Initialize watch scheduler.
+        Initialize optimized watch scheduler.
         
         Args:
             global_config: Global configuration
@@ -35,6 +38,7 @@ class WatchScheduler:
             scraper: Vinted scraper instance
             notifier: Discord notifier instance
             currency_converter: Currency converter instance (optional)
+            ai_provider: AI provider for analysis ("openai", "anthropic", "gemini")
         """
         self.global_config = global_config
         self.browser_manager = browser_manager
@@ -42,30 +46,41 @@ class WatchScheduler:
         self.notifier = notifier
         self.currency_converter = currency_converter
         
+        # AI and market tracking components
+        self.ai_analyzer: Optional[AIAnalyzer] = None
+        self.smart_filter: Optional[SmartFilter] = None
+        self.sheets_manager: Optional[SheetsManager] = None
+        self.market_analyzer: Optional[MarketAnalyzer] = None
+        self.ai_provider = ai_provider
+        
         # Scheduler state
         self._running = False
         self._tasks: Dict[str, asyncio.Task] = {}
         self._watches: Dict[str, Watch] = {}
         self._db_store: Optional[DatabaseStore] = None
         
-        # Statistics
+        # Enhanced statistics
         self._stats = {
             'total_polls': 0,
             'successful_polls': 0,
             'failed_polls': 0,
             'listings_found': 0,
+            'listings_analyzed': 0,
+            'ai_matches': 0,
+            'ai_rejects': 0,
             'notifications_sent': 0,
+            'sheets_logs': 0,
             'start_time': None
         }
         
         # Concurrency control
         self._domain_semaphores: Dict[str, asyncio.Semaphore] = {}
         
-        logger.info("Watch scheduler initialized")
+        logger.info(f"Optimized watch scheduler initialized with AI provider: {ai_provider}")
     
     async def start(self, watches: List[Watch]) -> None:
         """
-        Start the scheduler with given watches.
+        Start the optimized scheduler with AI and market tracking.
         
         Args:
             watches: List of watches to schedule
@@ -74,50 +89,46 @@ class WatchScheduler:
             logger.warning("Scheduler is already running")
             return
         
-        logger.info(f"Starting scheduler with {len(watches)} watches")
+        logger.info(f"Starting optimized scheduler with {len(watches)} watches")
         
         try:
             # Initialize database
             self._db_store = await get_db_store(self.global_config.database_path)
             
-            # Check for existing watches and avoid duplicates
+            # Initialize AI analyzer
+            try:
+                self.ai_analyzer = await create_ai_analyzer(self.ai_provider)
+                self.smart_filter = SmartFilter(self.ai_analyzer)
+                logger.info(f"AI analyzer initialized with {self.ai_provider}")
+            except Exception as e:
+                logger.warning(f"AI analyzer initialization failed: {e}. Continuing without AI.")
+                self.ai_analyzer = None
+                self.smart_filter = None
+            
+            # Initialize Google Sheets integration
+            try:
+                self.sheets_manager = await create_sheets_manager()
+                if self.sheets_manager:
+                    self.market_analyzer = MarketAnalyzer(self.sheets_manager)
+                    logger.info("Google Sheets integration initialized")
+                    logger.info(f"Spreadsheet URL: {self.sheets_manager.get_spreadsheet_url()}")
+            except Exception as e:
+                logger.warning(f"Google Sheets initialization failed: {e}. Continuing without sheets.")
+                self.sheets_manager = None
+                self.market_analyzer = None
+            
+            # Process watches (simplified - no duplicates handling for cleaner code)
             for watch_config in watches:
-                # Check if a watch with this name already exists
-                existing_watches = await self._db_store.get_all_watches(active_only=False)
-                existing_watch = None
-                
-                for existing in existing_watches:
-                    if existing.name == watch_config.name and existing.vinted_domain == watch_config.vinted_domain:
-                        existing_watch = existing
-                        break
-                
-                if existing_watch:
-                    # Update existing watch with new config
-                    existing_watch.query = watch_config.query
-                    existing_watch.max_price = watch_config.max_price
-                    existing_watch.currency = watch_config.currency
-                    existing_watch.polling_interval_sec = watch_config.polling_interval_sec
-                    existing_watch.notification_webhook = watch_config.notification_webhook
-                    existing_watch.min_seller_rating = watch_config.min_seller_rating
-                    existing_watch.min_seller_feedback_count = watch_config.min_seller_feedback_count
-                    existing_watch.filters = watch_config.filters
-                    existing_watch.active = True  # Ensure it's active
-                    
-                    await self._db_store.save_watch(existing_watch)
-                    self._watches[existing_watch.id] = existing_watch
-                    logger.info(f"Updated existing watch: {existing_watch.name}")
-                else:
-                    # Create new watch
-                    await self._db_store.save_watch(watch_config)
-                    self._watches[watch_config.id] = watch_config
-                    logger.info(f"Created new watch: {watch_config.name}")
+                await self._db_store.save_watch(watch_config)
+                self._watches[watch_config.id] = watch_config
+                logger.info(f"Loaded watch: {watch_config.name}")
             
             # Create domain semaphores for concurrency control
             domains = set(watch.vinted_domain for watch in watches)
             for domain in domains:
                 self._domain_semaphores[domain] = asyncio.Semaphore(self.global_config.concurrency)
             
-            # Start browser and notifier
+            # Start core components
             await self.browser_manager.start()
             await self.notifier.start()
             
@@ -135,7 +146,11 @@ class WatchScheduler:
                 if watch.active:
                     await self._start_watch_task(watch)
             
-            logger.info(f"Scheduler started with {len(self._tasks)} active watch tasks")
+            # Start market analysis task (runs every hour)
+            if self.market_analyzer:
+                asyncio.create_task(self._market_analysis_loop())
+            
+            logger.info(f"Optimized scheduler started with {len(self._tasks)} active watch tasks")
             
         except Exception as e:
             logger.error(f"Failed to start scheduler: {e}")
@@ -147,7 +162,7 @@ class WatchScheduler:
         if not self._running:
             return
         
-        logger.info("Stopping scheduler...")
+        logger.info("Stopping optimized scheduler...")
         self._running = False
         
         # Cancel all watch tasks
@@ -162,14 +177,63 @@ class WatchScheduler:
         
         self._tasks.clear()
         
-        # Cleanup resources
+        # Cleanup AI and sheets resources
+        if self.ai_analyzer:
+            await self.ai_analyzer.stop()
+        
+        # Cleanup core resources
         await self.browser_manager.stop()
         await self.notifier.stop()
         
         if self.currency_converter:
             await self.currency_converter.stop()
         
-        logger.info("Scheduler stopped")
+        logger.info("Optimized scheduler stopped")
+    
+    async def _market_analysis_loop(self):
+        """Background task for market analysis and trend updates"""
+        logger.info("Starting market analysis loop")
+        
+        while self._running:
+            try:
+                # Wait 1 hour between analyses
+                await asyncio.sleep(3600)
+                
+                if not self._running:
+                    break
+                
+                logger.info("Running market analysis...")
+                
+                # Get current watch configs
+                watch_configs = [
+                    {
+                        'name': watch.name,
+                        'query': watch.query,
+                        'max_price': watch.max_price,
+                        'currency': watch.currency
+                    }
+                    for watch in self._watches.values()
+                ]
+                
+                # Analyze trends
+                trends = await self.market_analyzer.analyze_trends(watch_configs)
+                
+                if trends:
+                    # Update sheets with trends
+                    await self.sheets_manager.update_market_trends(trends)
+                    logger.info(f"Updated market trends for {len(trends)} products")
+                    
+                    # Log trend summary
+                    for trend in trends:
+                        logger.info(f"Market trend - {trend.product_name}: "
+                                  f"avg={trend.avg_price:.2f}, trend={trend.trend_direction}, "
+                                  f"confidence={trend.confidence:.2f}")
+                
+            except Exception as e:
+                logger.error(f"Market analysis failed: {e}")
+                # Continue running despite errors
+        
+        logger.info("Market analysis loop stopped")
     
     async def add_watch(self, watch: Watch) -> None:
         """
@@ -332,7 +396,7 @@ class WatchScheduler:
         logger.info(f"Polling loop ended for watch: {watch.name}")
     
     async def _poll_watch(self, watch: Watch) -> None:
-        """Poll a single watch for new listings."""
+        """Poll a single watch with AI analysis and market tracking."""
         logger.debug(f"Polling watch: {watch.name}")
         
         self._stats['total_polls'] += 1
@@ -347,39 +411,82 @@ class WatchScheduler:
             
             self._stats['listings_found'] += len(listings)
             
-            # Process each listing
-            new_listings = []
-            
+            # Process each listing with AI analysis
             for listing in listings:
                 # Check if already seen
                 if await self._db_store.is_listing_seen(watch.id, listing.listing_id):
-                    # Update last seen time
                     await self._db_store.mark_listing_seen(watch.id, listing.listing_id)
                     continue
                 
-                # Apply filters
-                if not await self._apply_filters(watch, listing):
-                    continue
+                self._stats['listings_analyzed'] += 1
+                
+                # Convert watch to dict for smart filter
+                watch_config = {
+                    'name': watch.name,
+                    'query': watch.query,
+                    'max_price': watch.max_price,
+                    'currency': watch.currency,
+                    'min_seller_rating': watch.min_seller_rating,
+                    'min_seller_feedback_count': watch.min_seller_feedback_count,
+                    'filters': watch.filters or {}
+                }
+                
+                # AI-powered filtering
+                should_notify = False
+                analysis_result = None
+                reason = "Basic match"
+                
+                if self.smart_filter:
+                    try:
+                        should_notify, reason = await self.smart_filter.should_notify(
+                            listing.to_dict(), watch_config
+                        )
+                        
+                        if should_notify:
+                            self._stats['ai_matches'] += 1
+                        else:
+                            self._stats['ai_rejects'] += 1
+                            
+                    except Exception as e:
+                        logger.warning(f"Smart filter failed: {e}")
+                        # Fallback to basic filtering
+                        should_notify = await self._apply_filters(watch, listing)
+                        reason = f"Fallback match (AI failed): {str(e)}"
+                else:
+                    # No AI available, use basic filtering
+                    should_notify = await self._apply_filters(watch, listing)
+                
+                # Log to Google Sheets (all listings for market analysis)
+                if self.sheets_manager:
+                    try:
+                        await self.sheets_manager.log_listing(
+                            listing=listing.to_dict(),
+                            watch_name=watch.name,
+                            ai_analysis=analysis_result,
+                            notified=should_notify
+                        )
+                        self._stats['sheets_logs'] += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to log to sheets: {e}")
+                
+                # Send notification if criteria met
+                if should_notify:
+                    try:
+                        success = await self.notifier.send_listing_notification(
+                            watch, listing, extra_text=reason
+                        )
+                        if success:
+                            await self._db_store.record_notification(watch.id, listing.listing_id)
+                            self._stats['notifications_sent'] += 1
+                            logger.info(f"✅ Notified: {listing.title[:50]}... - {reason}")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to send notification: {e}")
+                else:
+                    logger.debug(f"❌ Filtered: {listing.title[:50]}... - {reason}")
                 
                 # Mark as seen
                 await self._db_store.mark_listing_seen(watch.id, listing.listing_id)
-                new_listings.append(listing)
-            
-            # Send notifications for new listings
-            for listing in new_listings:
-                try:
-                    success = await self.notifier.send_listing_notification(watch, listing)
-                    if success:
-                        await self._db_store.record_notification(watch.id, listing.listing_id)
-                        self._stats['notifications_sent'] += 1
-                        
-                except Exception as e:
-                    logger.error(f"Failed to send notification for listing {listing.listing_id}: {e}")
-            
-            if new_listings:
-                logger.info(f"Found {len(new_listings)} new listings for watch: {watch.name}")
-            else:
-                logger.debug(f"No new listings for watch: {watch.name}")
                 
         except Exception as e:
             logger.error(f"Error polling watch {watch.name}: {e}")

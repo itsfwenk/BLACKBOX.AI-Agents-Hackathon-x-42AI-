@@ -49,40 +49,42 @@ class DiscordNotifier:
             self._session = None
             logger.debug("Discord notifier session stopped")
     
-    async def send_listing_notification(self, 
-                                        watch: Watch, 
-                                        listing: Listing) -> bool:
+    async def send_listing_notification(self,
+                                        watch: Watch,
+                                        listing: Listing,
+                                        extra_text: Optional[str] = None) -> bool:
         """
         Send notification for a new listing.
-        
+
         Args:
             watch: Watch that found the listing
             listing: Listing to notify about
-        
+            extra_text: Additional text to include in notification (e.g., AI analysis reason)
+
         Returns:
             True if notification sent successfully, False otherwise
         """
         try:
             # Get webhook URL (watch-specific or default)
             webhook_url = watch.notification_webhook or self.default_webhook_url
-            
+
             if not webhook_url:
                 logger.error(f"No webhook URL configured for watch {watch.name}")
                 return False
-            
+
             # Create Discord embed
-            embed = self._create_listing_embed(watch, listing)
-            
+            embed = self._create_listing_embed(watch, listing, extra_text)
+
             # Send notification
             success = await self._send_webhook(webhook_url, embed)
-            
+
             if success:
                 logger.info(f"Sent Discord notification for listing {listing.listing_id} (watch: {watch.name})")
             else:
                 logger.error(f"Failed to send Discord notification for listing {listing.listing_id}")
-            
+
             return success
-            
+
         except Exception as e:
             logger.error(f"Error sending Discord notification: {e}")
             return False
@@ -154,25 +156,29 @@ class DiscordNotifier:
             logger.error(f"Error sending error notification: {e}")
             return False
     
-    def _create_listing_embed(self, watch: Watch, listing: Listing) -> Dict[str, Any]:
+    def _create_listing_embed(self, watch: Watch, listing: Listing, extra_text: Optional[str] = None) -> Dict[str, Any]:
         """Create Discord embed for a listing notification."""
         # Determine embed color based on price
         color = self._get_price_color(listing.price_amount, watch.max_price)
-        
+
         # Build description
         description_parts = [
             f"**{listing.price_amount} {listing.price_currency}**"
         ]
-        
+
         if listing.brand:
             description_parts.append(f"Brand: {listing.brand}")
-        
+
         if listing.size:
             description_parts.append(f"Size: {listing.size}")
-        
+
         if listing.condition:
             description_parts.append(f"Condition: {listing.condition}")
-        
+
+        # Add extra text (AI analysis reason) if provided
+        if extra_text:
+            description_parts.append(f"**AI Analysis:** {extra_text}")
+
         description = "\n".join(description_parts)
         
         # Create embed
