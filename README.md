@@ -1,4 +1,4 @@
-# 🎯 Vinted Monitor - AI-Powered & Stealth
+# 🎯 CAF Vinted Monitor - AI-Powered & Stealth
 
 **The most advanced Vinted scraper with AI analysis, anti-detection, and market tracking.**
 
