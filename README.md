@@ -18,7 +18,7 @@
 
 ```bash
 # Clone and setup
-git clone <repository-url>
+git clone <repository-url> vinted-monitor
 cd vinted-monitor
 
 # Create virtual environment
