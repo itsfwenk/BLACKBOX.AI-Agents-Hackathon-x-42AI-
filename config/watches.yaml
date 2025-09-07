@@ -16,24 +16,11 @@ watches:
     min_seller_feedback_count: null
     min_seller_rating: null
     notification_webhook: null  # Use global webhook
-
-  - name: "Vintage Denim Jacket"
-    vinted_domain: "vinted.com"
-    query: "vintage denim jacket"
-    max_price: 30.0
-    currency: "USD"
-    polling_interval_sec: 12
-    filters:
-      order: "newest_first"
-      price_from: 15
-    min_seller_feedback_count: null
-    min_seller_rating: null
-    notification_webhook: null
   
   - name: "ETB étincelles déferlantes"
     vinted_domain: "vinted.fr"
     query: "ETB étincelles déferlantes"
-    max_price: 130.0
+    max_price: 80.0
     currency: "EUR"
     polling_interval_sec: 10
     filters:
@@ -42,3 +29,84 @@ watches:
     min_seller_feedback_count: null
     min_seller_rating: null
     notification_webhook: null
+  
+  - name: "ETB rivalités destinées"
+    vinted_domain: "vinted.fr"
+    query: "ETB rivalités destinées"
+    max_price: 75.0
+    currency: "EUR"
+    polling_interval_sec: 10
+    filters:
+      order: "newest_first"
+      price_from: 55
+    min_seller_feedback_count: null
+    min_seller_rating: null
+    notification_webhook: null
+  
+    
+  - name: "bundle rivalités destinées"
+    vinted_domain: "vinted.fr"
+    query: "'bundle rivalités destinées'"
+    max_price: 50.0
+    currency: "EUR"
+    polling_interval_sec: 10
+    filters:
+      order: "newest_first"
+      price_from: 35
+    min_seller_feedback_count: null
+    min_seller_rating: null
+    notification_webhook: null
+
+  - name: "bundle aventures ensemble"
+    vinted_domain: "vinted.fr"
+    query: "'bundle aventures ensemble'"
+    max_price: 45.0
+    currency: "EUR"
+    polling_interval_sec: 10
+    filters:
+      order: "newest_first"
+      price_from: 35
+    min_seller_feedback_count: null
+    min_seller_rating: null
+    notification_webhook: null
+    
+  - name: "ETB foudre noire"
+    vinted_domain: "vinted.fr"
+    query: "'ETB foudre noire'"
+    max_price: 70.0
+    currency: "EUR"
+    polling_interval_sec: 10
+    filters:
+      order: "newest_first"
+      price_from: 50
+    min_seller_feedback_count: null
+    min_seller_rating: null
+    notification_webhook: null 
+
+  - name: "ETB flamme blanche"
+    vinted_domain: "vinted.fr"
+    query: "'ETB flamme blanche'"
+    max_price: 70.0
+    currency: "EUR"
+    polling_interval_sec: 10
+    filters:
+      order: "newest_first"
+      price_from: 50
+    min_seller_feedback_count: null
+    min_seller_rating: null
+    notification_webhook: null    
+
+  - name: "pokebox destinées rivales"
+    vinted_domain: "vinted.fr"
+    query: "'pokebox destinées rivales'"
+    max_price: 25.0
+    currency: "EUR"
+    polling_interval_sec: 10
+    filters:
+      order: "newest_first"
+      price_from: 15
+    min_seller_feedback_count: null
+    min_seller_rating: null
+    notification_webhook: null
+
+
